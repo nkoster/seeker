@@ -5,7 +5,8 @@
   const port = 3333
 
   const { Client } = require('pg')
-
+  const select = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value = $1'
+  const selectAll = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type'
   const client = new Client({
     user: 'postgres',
     host: 'localhost',
@@ -17,19 +18,17 @@
   
   client.connect()
   
-  const query = {
-    name: 'fetch',
-    text: 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value = $1',
-    values: ['9802384'],
-  }
-
   const api = async (req, res) => {
     try {
+      const query = {
+        name: 'fetch',
+        text: select,
+        values: [req.body.search]
+      }
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
-      // res.send(req.body)
       res.send(JSON.stringify(data.rows))
-      console.log('Got body:', req.body)
+      console.log('Got body:', req.body.search)
     } catch (err) {
       console.log(err.stack)
     }
@@ -40,8 +39,6 @@
 
   app.listen(port, () => {
     console.log(`Function PG listening at http://localhost:${port}`)
-  })
+  }).on('close', () => client.end())
 
-  // client.end()
-  
 })()
