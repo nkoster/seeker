@@ -33,7 +33,6 @@
   }
 
   app.post('/api/v1/search', (req, res) => api(req, res))
-  app.get('/api/v1/search', (req, res) => api(req, res))
 
   app.listen(port, () => {
     console.log(`Function PG listening at http://localhost:${port}`)
