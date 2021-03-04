@@ -20,19 +20,20 @@
   const api = async (req, res) => {
     try {
       const query = {
-        name: 'fetch',
+        name: 'seeker',
         text: select,
         values: [`%${req.body.search}%`]
       }
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
       res.send(JSON.stringify(data.rows))
+      console.log('rows:', data.rows.length)
     } catch (err) {
       console.log(err.stack)
     }
   }
 
-  app.post('/api/v1/search', (req, res) => api(req, res))
+  app.post('/api/v1/search', api)
 
   app.listen(port, () => {
     console.log(`Function PG listening at http://localhost:${port}`)
