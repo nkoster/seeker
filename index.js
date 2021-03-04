@@ -5,14 +5,15 @@
   const port = 3333
 
   const { Client } = require('pg')
-  const select = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
   const client = new Client({
     user: 'postgres',
     host: 'localhost',
     database: 'postgres',
     port: 5432
   })
-  
+
+  const sqlSelect = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
+
   app.use(express.json())
   
   client.connect()
@@ -21,7 +22,7 @@
     try {
       const query = {
         name: 'seeker',
-        text: select,
+        text: sqlSelect,
         values: [`%${req.body.search}%`]
       }
       const data = await client.query(query)
@@ -35,8 +36,8 @@
 
   app.post('/api/v1/search', api)
 
-  app.listen(port, () => {
-    console.log(`Function PG listening at http://localhost:${port}`)
-  }).on('close', () => client.end())
+  app.listen(port, _ => {
+    console.log(`Seeker listening at http://localhost:${port}`)
+  }).on('close', _ => client.end())
 
 })()
