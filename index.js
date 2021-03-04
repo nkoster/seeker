@@ -5,8 +5,7 @@
   const port = 3333
 
   const { Client } = require('pg')
-  const select = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value = $1'
-  const selectAll = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type'
+  const select = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
   const client = new Client({
     user: 'postgres',
     host: 'localhost',
@@ -23,12 +22,11 @@
       const query = {
         name: 'fetch',
         text: select,
-        values: [req.body.search]
+        values: [`%${req.body.search}%`]
       }
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
       res.send(JSON.stringify(data.rows))
-      console.log('Got body:', req.body.search)
     } catch (err) {
       console.log(err.stack)
     }
