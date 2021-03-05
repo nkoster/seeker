@@ -2,7 +2,8 @@
 
   const express = require('express')
   const app = express()
-  
+  var cors = require('cors')
+
   const apiPort = process.env.APIPORT || 3333
 
   const { Pool } = require('pg')
@@ -10,6 +11,7 @@
 
   const sqlSelect = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
 
+  app.use(cors())
   app.use(express.json())
   
   const api = async (req, res) => {
