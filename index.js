@@ -2,7 +2,8 @@
 
   const express = require('express')
   const app = express()
-  const port = 3333
+  
+  const apiPort = process.env.APIPORT || 3333
 
   const { Pool } = require('pg')
   const pool = new Pool()
@@ -35,8 +36,6 @@
 
   app.post('/api/v1/search', api)
 
-  app.listen(port, _ => {
-    console.log(`Seeker listening at http://localhost:${port}`)
-  })
+  app.listen(apiPort, _ => console.log('Seeker at port', apiPort))
 
 })()
