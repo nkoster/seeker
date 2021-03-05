@@ -5,12 +5,7 @@
   const port = 3333
 
   const { Client } = require('pg')
-  const client = new Client({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'postgres',
-    port: 5432
-  })
+  const client = new Client()
 
   const sqlSelect = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
 
