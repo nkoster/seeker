@@ -3,11 +3,23 @@
   const express = require('express')
   const app = express()
   var cors = require('cors')
+  const fs = require('fs')
+
+  const config = {
+    database: process.env.PGDATABASE || 'postgres',
+    host: process.env.PGHOST || 'localhost',
+    ssl: {
+      rejectUnauthorized: false,
+      ca: fs.readFileSync('tls/root.crt').toString(),
+      key: fs.readFileSync('tls/client_postgres.key').toString(),
+      cert: fs.readFileSync('tls/client_postgres.crt').toString(),
+    }
+  }
 
   const apiPort = process.env.APIPORT || 3333
 
   const { Pool } = require('pg')
-  const pool = new Pool()
+  const pool = new Pool(config)
 
   const sqlSelect = 'SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1'
 
