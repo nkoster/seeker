@@ -27,7 +27,13 @@
   app.use(express.json())
   
   const api = async (req, res) => {
-    const client = await pool.connect()
+    let client
+    try {
+      client = await pool.connect()
+    } catch(err) {
+      console.log('Oh boy...', err.message)
+      process.exit(1)
+    }
     try {
       try {
         const query = {
