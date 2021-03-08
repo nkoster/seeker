@@ -1,7 +1,7 @@
 # seeker
 
 ```
-APIPORT=3334 PGUSER=postgres PGHOST=192.168.67.166 PGPORT=5432 nomon index.js
+APIPORT=3334 PGUSER=postgres PGHOST=192.168.67.166 PGPORT=5432 nodemon index.js
 ```
 
 ```
