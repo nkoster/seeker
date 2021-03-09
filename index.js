@@ -1,8 +1,9 @@
 (_ => {
 
+  const DEBUG = false
   const express = require('express')
   const app = express()
-  var cors = require('cors')
+  const cors = require('cors')
   const fs = require('fs')
 
   const config = {
@@ -22,7 +23,7 @@
   const pool = new Pool(config)
 
   const LIMIT = 51
-  
+
   const sqlSelect = `SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1 LIMIT ${LIMIT}`
 
   app.use(cors())
@@ -46,7 +47,7 @@
         const data = await client.query(query)
         res.setHeader('Content-Type', 'application/json')
         res.send(JSON.stringify(data.rows))
-        console.log('rows:', data.rows.length)
+        DEBUG && console.log('rows:', data.rows.length)
       } finally {
         client.release()
       } 
