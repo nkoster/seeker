@@ -1,6 +1,7 @@
 (_ => {
 
   const DEBUG = false
+  const DEVDELAY = true
   const express = require('express')
   const app = express()
   const cors = require('cors')
@@ -47,7 +48,10 @@
         }
         const data = await client.query(query)
         res.setHeader('Content-Type', 'application/json')
-        res.send(JSON.stringify(data.rows))
+        if (DEVDELAY)
+          setTimeout(_ => res.send(JSON.stringify(data.rows)), 1000)
+        else
+          res.send(JSON.stringify(data.rows))
         DEBUG && console.log('rows:', data.rows.length)
       } finally {
         client.release()
