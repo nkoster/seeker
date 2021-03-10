@@ -9,6 +9,7 @@
   const config = {
     database: process.env.PGDATABASE || 'postgres',
     host: process.env.PGHOST || 'localhost',
+    port: process.env.PGPORT || '5432',
     ssl: {
       rejectUnauthorized: false,
       ca: fs.readFileSync('tls/root.crt').toString(),
