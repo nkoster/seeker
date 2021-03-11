@@ -26,7 +26,7 @@
 
   const LIMIT = process.env.SQLLIMIT || 50
 
-  const sqlSelect = `SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier i NATURAL JOIN kafka_topic NATURAL JOIN identifier_type WHERE identifier_value ilike $1 LIMIT ${LIMIT}`
+  const sqlSelect = `SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier_20210311 WHERE identifier_value ilike $1 LIMIT ${LIMIT}`
 
   app.use(cors())
   app.use(express.json())
