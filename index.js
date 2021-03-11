@@ -26,7 +26,13 @@
 
   const LIMIT = process.env.SQLLIMIT || 50
 
-  const sqlSelect = `SELECT kafka_topic, kafka_offset, identifier_type, identifier_value FROM identifier_20210311 WHERE identifier_value ilike $1 LIMIT ${LIMIT}`
+  const sqlSelect = `
+  SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
+  FROM identifier_20210311
+  WHERE identifier_value ilike $1
+  AND CAST(kafka_offset AS VARCHAR(10)) like $2
+  LIMIT ${LIMIT}
+  `
 
   app.use(cors())
   app.use(express.json())
@@ -44,7 +50,10 @@
         const query = {
           name: 'seeker',
           text: sqlSelect,
-          values: [`%${req.body.search}%`]
+          values: [
+            `%${req.body.search.queryIdentifierValue}%`,
+            `%${req.body.search.queryKafkaOffset}%`
+          ]
         }
         const data = await client.query(query)
         res.setHeader('Content-Type', 'application/json')
@@ -57,7 +66,7 @@
         client.release()
       } 
     } catch (err) {
-        client.release()
+        // client.release()
         console.log(err.stack)
     }
   }
