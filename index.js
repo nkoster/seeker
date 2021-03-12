@@ -29,8 +29,9 @@
   const sqlSelect = `
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
   FROM identifier_20210311
-  WHERE identifier_value ilike $1
-  AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $2
+  WHERE kafka_topic ilike $1
+  AND identifier_value ilike $2
+  AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $3
   LIMIT ${LIMIT}
   `
   app.use(cors())
@@ -50,6 +51,7 @@
           name: 'seeker',
           text: sqlSelect,
           values: [
+            `%${req.body.search.queryKafkaTopic}%`,
             `%${req.body.search.queryIdentifierValue}%`,
             `%${req.body.search.queryKafkaOffset}%`
           ]
