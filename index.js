@@ -30,9 +30,10 @@
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
   FROM identifier_20210311
   WHERE identifier_value ilike $1
-  AND CAST(kafka_offset AS VARCHAR(10)) like $2
+  AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $2
   LIMIT ${LIMIT}
   `
+//right('00000' + cast(Your_Field as varchar(5)), 5)
 
   app.use(cors())
   app.use(express.json())
@@ -57,7 +58,7 @@
         }
         const data = await client.query(query)
         res.setHeader('Content-Type', 'application/json')
-        if (DEVDELAY)
+        if (DEVDELAY > 0)
           setTimeout(_ => res.send(JSON.stringify(data.rows)), DEVDELAY)
         else
           res.send(JSON.stringify(data.rows))
