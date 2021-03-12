@@ -33,8 +33,6 @@
   AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $2
   LIMIT ${LIMIT}
   `
-//right('00000' + cast(Your_Field as varchar(5)), 5)
-
   app.use(cors())
   app.use(express.json())
   
