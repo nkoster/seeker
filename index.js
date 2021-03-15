@@ -24,7 +24,8 @@
   const { Pool } = require('pg')
   const pool = new Pool(config)
 
-  const LIMIT = process.env.SQLLIMIT || 50
+  /* 51 so the client can say something like "50+ rows" */
+  const LIMIT = process.env.SQLLIMIT || 51
 
   const sqlSelect = `
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
