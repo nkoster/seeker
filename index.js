@@ -43,23 +43,29 @@
 
   try {
     await client.connect()
-    client.on('notice', client.cancel())
   } catch(err) {
     console.log('Oh boy...', err.message)
   }
 
   const api = async (req, res) => {
-    client.emit('notice')
+    const query = {
+      name: 'seeker',
+      text: sqlSelect,
+      values: [
+        `%${req.body.search.queryKafkaTopic}%`,
+        `%${req.body.search.queryIdentifierType}%`,
+        `%${req.body.search.queryIdentifierValue}%`,
+        `%${req.body.search.queryKafkaOffset}%`
+      ]
+    }
     try {
-      const query = {
-        name: 'seeker',
-        text: sqlSelect,
-        values: [
-          `%${req.body.search.queryKafkaTopic}%`,
-          `%${req.body.search.queryIdentifierType}%`,
-          `%${req.body.search.queryIdentifierValue}%`,
-          `%${req.body.search.queryKafkaOffset}%`
-        ]
+      const pid = await client.query('SELECT pg_backend_pid()')
+        .then(result => result.rows[0])
+      console.log('pid', pid.pg_backend_pid)
+      try {
+        await client.query('SELECT pg_cancel_backend($1)', [pid.pg_backend_pid])
+      } catch (err) {
+        console.log(err.message)
       }
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
