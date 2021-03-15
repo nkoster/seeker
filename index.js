@@ -59,11 +59,11 @@
       ]
     }
     try {
-      const pid = await client.query('SELECT pg_backend_pid()')
+      const {pg_backend_pid} = await client.query('SELECT pg_backend_pid()')
         .then(result => result.rows[0])
-      console.log('pid', pid.pg_backend_pid)
+      DEBUG && console.log('pid', pg_backend_pid)
       try {
-        await client.query('SELECT pg_cancel_backend($1)', [pid.pg_backend_pid])
+        await client.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
       } catch (err) {
         console.log(err.message)
       }
