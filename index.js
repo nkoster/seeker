@@ -21,6 +21,7 @@
 
   const apiPort = process.env.APIPORT || 3333
 
+  const pg = require('pg')
   const { Client } = require('pg')
   const client = new Client(config)
 
@@ -29,8 +30,8 @@
 
   const sqlSelect = `
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
-  -- FROM dist_identifier_20210312
-  FROM identifier_20210311
+  FROM dist_identifier_20210312
+  -- FROM identifier_20210311
   WHERE ($1 = '' OR kafka_topic ilike $1)
   AND ($2 = '' OR identifier_type ilike $2)
   AND ($3 = '' OR identifier_value ilike $3)
@@ -43,11 +44,13 @@
 
   try {
     await client.connect()
+    client.on('notice', client.cancel())
   } catch(err) {
     console.log('Oh boy...', err.message)
   }
 
   const api = async (req, res) => {
+    client.emit('notice')
     try {
       const query = {
         name: 'seeker',
