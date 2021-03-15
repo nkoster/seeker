@@ -1,6 +1,6 @@
 (_ => {
 
-  const DEBUG = false
+  const DEBUG = true
   const DEVDELAY = 0
   const express = require('express')
   const app = express()
@@ -30,9 +30,9 @@
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
   -- FROM dist_identifier_20210312
   FROM identifier_20210311
-  WHERE (kafka_topic = '' OR kafka_topic ilike $1)
-  AND (identifier_type = '' OR identifier_type ilike $2)
-  AND (identifier_value = '' OR identifier_value ilike $3)
+  WHERE ($1 = '' OR kafka_topic ilike $1)
+  AND ($2 = '' OR identifier_type ilike $2)
+  AND ($3 = '' OR identifier_value ilike $3)
   AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $4
   LIMIT ${LIMIT}
   `
