@@ -79,8 +79,7 @@
         res.send(JSON.stringify(data.rows))
       DEBUG && console.log('rows:', data.rows.length)
     } catch (err) {
-      /* this catch scope shows pidKiller messages */
-      console.log('catch:', err.message)
+      console.log(err.message)
     }
   }
 
