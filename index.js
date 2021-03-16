@@ -23,6 +23,7 @@
 
   const { Client } = require('pg')
   const client = new Client(config)
+  const clientKiller = new Client(config)
 
   /* 51 so the client can say something like "50+ rows" */
   const LIMIT = process.env.SQLLIMIT || 51
@@ -43,6 +44,7 @@
 
   try {
     await client.connect()
+    await clientKiller.connect()
   } catch(err) {
     console.log('Oh boy...', err.message)
   }
@@ -63,9 +65,9 @@
         .then(result => result.rows[0])
       DEBUG && console.log('pid', pg_backend_pid)
       try {
-        await client.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
+        await clientKiller.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
       } catch (err) {
-        console.log(err.message)
+        DEBUG && console.log(err.message)
       }
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
