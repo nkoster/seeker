@@ -77,7 +77,7 @@
         res.send(JSON.stringify(data.rows))
       DEBUG && console.log('rows:', data.rows.length)
     } catch (err) {
-        console.log(err.stack)
+        console.log('STACK:', err.stack)
     }
   }
 
