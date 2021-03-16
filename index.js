@@ -49,6 +49,11 @@
     console.log('Oh boy...', err.message)
   }
 
+  const { pg_backend_pid } = await client.query('SELECT pg_backend_pid()')
+    .then(result => result.rows[0])
+    
+  DEBUG && console.log('pid', pg_backend_pid)
+
   const api = async (req, res) => {
     const query = {
       name: 'seeker',
@@ -61,14 +66,11 @@
       ]
     }
     try {
-      const {pg_backend_pid} = await client.query('SELECT pg_backend_pid()')
-        .then(result => result.rows[0])
-      DEBUG && console.log('pid', pg_backend_pid)
-      try {
-        await pidKiller.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
-      } catch (err) {
-        DEBUG && console.log(err.message)
-      }
+      await pidKiller.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
+    } catch (err) {
+      DEBUG && console.log(err.message)
+    }
+    try {
       const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
       if (DEVDELAY > 0)
@@ -77,12 +79,15 @@
         res.send(JSON.stringify(data.rows))
       DEBUG && console.log('rows:', data.rows.length)
     } catch (err) {
-        console.log('STACK:', err.stack)
+      /* this catch scope shows pidKiller messages */
+      console.log('catch:', err.message)
     }
   }
 
   app.post('/api/v1/search', api)
 
-  app.listen(apiPort, _ => console.log('Seeker at port', apiPort))
+  app.listen(apiPort, _ => 
+    console.log('Seeker at port', apiPort)
+  ).on('error', err => console.log(err.message))
 
 })()
