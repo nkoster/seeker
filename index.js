@@ -28,9 +28,10 @@
   /* 51 so the client can say something like "50+ rows" */
   const LIMIT = process.env.SQLLIMIT || 51
 
-  const sqlSelect = `
+  const sqlSelectQuery = queryId => {
+    return `
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
-  /*aap*/
+  /*${queryId}*/
   FROM dist_identifier_20210312
   -- FROM identifier_20210311
   WHERE ($1 = '' OR kafka_topic ilike $1)
@@ -40,19 +41,21 @@
   ORDER BY kafka_offset DESC
   LIMIT ${LIMIT}
   `
+  }
 
-  const killQuery = `
-  with pids as (
-    /*notthisone*/
-     select pid
-     from   pg_stat_activity
-     where  query like '%/*aap*/%'
-     and    query not like '%/*notthisone*/%'
-     and state='active'
-    )
-  select pg_cancel_backend(pid) from pids;
-  `
-
+  const sqlKillQuery = queryId => {
+    return `
+    with pids as (
+      /*notthisone*/
+       select pid
+       from   pg_stat_activity
+       where  query like '%/*${queryId}*/%'
+       and    query not like '%/*notthisone*/%'
+       and state='active'
+      )
+    select pg_cancel_backend(pid) from pids;
+    `
+  }
   app.use(cors())
   app.use(express.json())
 
@@ -60,18 +63,15 @@
     await client.connect()
     await pidKiller.connect()
   } catch(err) {
-    console.log(err.message)
+    DEBUG && console.log(err.message)
   }
 
-  // const { pg_backend_pid } = await client.query('SELECT pg_backend_pid()')
-  //   .then(result => result.rows[0])
-    
-  // DEBUG && console.log('pid', pg_backend_pid)
-
   const api = async (req, res) => {
+    const queryId = req.body.queryId
+    DEBUG && console.log('queryId:', queryId)
     const query = {
-      name: 'seeker',
-      text: sqlSelect,
+      name: queryId,
+      text: sqlSelectQuery(queryId),
       values: [
         `%${req.body.search.queryKafkaTopic}%`,
         `%${req.body.search.queryIdentifierType}%`,
@@ -80,7 +80,7 @@
       ]
     }
     try {
-      await pidKiller.query(killQuery)
+      await pidKiller.query(sqlKillQuery(queryId))
     } catch (err) {
       DEBUG && console.log(err.message)
     }
@@ -93,7 +93,7 @@
         res.send(JSON.stringify(data.rows))
       DEBUG && console.log('rows:', data.rows.length)
     } catch (err) {
-      console.log(err.message)
+      DEBUG && console.log(err.message)
     }
   }
 
