@@ -30,6 +30,7 @@
 
   const sqlSelect = `
   SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
+  /*aap*/
   FROM dist_identifier_20210312
   -- FROM identifier_20210311
   WHERE ($1 = '' OR kafka_topic ilike $1)
@@ -39,6 +40,19 @@
   ORDER BY kafka_offset DESC
   LIMIT ${LIMIT}
   `
+
+  const killQuery = `
+  with pids as (
+    /*notthisone*/
+     select pid
+     from   pg_stat_activity
+     where  query like '%/*aap*/%'
+     and    query not like '%/*notthisone*/%'
+     and state='active'
+    )
+  select pg_cancel_backend(pid) from pids;
+  `
+
   app.use(cors())
   app.use(express.json())
 
@@ -46,13 +60,13 @@
     await client.connect()
     await pidKiller.connect()
   } catch(err) {
-    console.log('Oh boy...', err.message)
+    console.log(err.message)
   }
 
-  const { pg_backend_pid } = await client.query('SELECT pg_backend_pid()')
-    .then(result => result.rows[0])
+  // const { pg_backend_pid } = await client.query('SELECT pg_backend_pid()')
+  //   .then(result => result.rows[0])
     
-  DEBUG && console.log('pid', pg_backend_pid)
+  // DEBUG && console.log('pid', pg_backend_pid)
 
   const api = async (req, res) => {
     const query = {
@@ -66,7 +80,7 @@
       ]
     }
     try {
-      await pidKiller.query('SELECT pg_cancel_backend($1)', [pg_backend_pid])
+      await pidKiller.query(killQuery)
     } catch (err) {
       DEBUG && console.log(err.message)
     }
