@@ -7,6 +7,12 @@
   const cors = require('cors')
   const fs = require('fs')
 
+  const consoleLog = (...args) => {
+    process.stdout.write(`${new Date().toUTCString()}:`)
+    args.forEach(arg => process.stdout.write(` ${arg.toString()}`))
+    process.stdout.write('\n')
+  }
+
   const config = {
     database: process.env.PGDATABASE || 'postgres',
     host: process.env.PGHOST || 'localhost',
@@ -64,12 +70,12 @@
     await client.connect()
     await pidKiller.connect()
   } catch(err) {
-    DEBUG && console.log(err.message)
+    DEBUG && consoleLog(err.message)
   }
 
   const api = async (req, res) => {
     const queryId = req.body.queryId
-    DEBUG && console.log('queryId:', queryId)
+    DEBUG && consoleLog('queryId:', queryId)
     const query = {
       name: queryId,
       text: sqlSelectQuery(queryId),
@@ -83,7 +89,7 @@
     try {
       await pidKiller.query(sqlKillQuery(queryId))
     } catch (err) {
-      DEBUG && console.log(err.message)
+      DEBUG && consoleLog(err.message)
     }
     try {
       const data = await client.query(query)
@@ -92,16 +98,16 @@
         setTimeout(_ => res.send(JSON.stringify(data.rows)), DEVDELAY)
       else
         res.send(JSON.stringify(data.rows))
-      DEBUG && console.log('rows:', data.rows.length)
+      DEBUG && consoleLog('rows:', data.rows.length)
     } catch (err) {
-      DEBUG && console.log(err.message)
+      DEBUG && consoleLog(err.message)
     }
   }
 
   app.post('/api/v1/search', api)
 
   app.listen(apiPort, _ => 
-    console.log('Seeker at port', apiPort)
-  ).on('error', err => console.log(err.message))
+    consoleLog('Seeker at port', apiPort)
+  ).on('error', err => consoleLog(err.message))
 
 })()
