@@ -45,13 +45,13 @@
 
   const sqlKillQuery = queryId => {
     return `
-  with pids as (
+  WITH pids AS (
     /*notthisone*/
-    select pid
-    from   pg_stat_activity
-    where  query like '%/*${queryId}*/%'
-    and    query not like '%/*notthisone*/%'
-    and    state='active'
+    SELECT pid
+    FROM   pg_stat_activity
+    WHERE  query LIKE '%/*${queryId}*/%'
+    AND    query NOT LIKE '%/*notthisone*/%'
+    AND    state='active'
   )
   SELECT pg_cancel_backend(pid) FROM pids;
   `
