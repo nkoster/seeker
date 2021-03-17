@@ -35,9 +35,9 @@
   FROM dist_identifier_20210312
   -- FROM identifier_20210311
   WHERE ($1 = '' OR kafka_topic ilike $1)
-  AND ($2 = '' OR identifier_type ilike $2)
-  AND ($3 = '' OR identifier_value ilike $3)
-  AND RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $4
+  AND   ($2 = '' OR identifier_type ilike $2)
+  AND   ($3 = '' OR identifier_value ilike $3)
+  AND   RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $4
   ORDER BY kafka_offset DESC
   LIMIT ${LIMIT}
   `
@@ -45,17 +45,18 @@
 
   const sqlKillQuery = queryId => {
     return `
-    with pids as (
-      /*notthisone*/
-       select pid
-       from   pg_stat_activity
-       where  query like '%/*${queryId}*/%'
-       and    query not like '%/*notthisone*/%'
-       and state='active'
-      )
-    select pg_cancel_backend(pid) from pids;
-    `
+  with pids as (
+    /*notthisone*/
+    select pid
+    from   pg_stat_activity
+    where  query like '%/*${queryId}*/%'
+    and    query not like '%/*notthisone*/%'
+    and    state='active'
+  )
+  SELECT pg_cancel_backend(pid) FROM pids;
+  `
   }
+
   app.use(cors())
   app.use(express.json())
 
