@@ -9,7 +9,7 @@
 
   const consoleLog = (...args) => {
     process.stdout.write(`${new Date().toUTCString()}:`)
-    args.forEach(arg => process.stdout.write(` ${arg.toString()}`))
+    args.forEach(arg => process.stdout.write(` ${arg?.toString()}`))
     process.stdout.write('\n')
   }
 
