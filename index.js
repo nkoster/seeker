@@ -7,14 +7,9 @@
   const cors = require('cors')
   const fs = require('fs')
 
-  const consoleLog = (...args) => {
-    process.stdout.write(`${new Date().toUTCString()}:`)
-    args.forEach(arg => process.stdout.write(` ${arg?.toString()}`))
-    process.stdout.write('\n')
-  }
-
   const config = {
     database: process.env.PGDATABASE || 'postgres',
+    user: process.env.PGUSER || 'postgres',
     host: process.env.PGHOST || 'localhost',
     port: process.env.PGPORT || '5432',
     ssl: {
@@ -27,87 +22,95 @@
 
   const apiPort = process.env.APIPORT || 3333
 
-  const { Client } = require('pg')
-  const client = new Client(config)
-  const pidKiller = new Client(config)
-
-  /* 51 so the client can say something like "50+ rows" */
-  const LIMIT = process.env.SQLLIMIT || 51
+  const { Pool } = require('pg')
+  const clientPool = new Pool(config)
+  const pidKillerPool = new Pool(config)
 
   const sqlSelectQuery = queryId => {
     return `
-  SELECT kafka_topic, kafka_offset, identifier_type, identifier_value
-  /*${queryId}*/
-  FROM dist_identifier_20210312
-  -- FROM identifier_20210311
-  WHERE ($1 = '' OR kafka_topic ilike $1)
-  AND   ($2 = '' OR identifier_type ilike $2)
-  AND   ($3 = '' OR identifier_value ilike $3)
-  AND   RIGHT('0000000000' || CAST(kafka_offset AS VARCHAR(10)), 10) like $4
-  ORDER BY kafka_offset DESC
-  LIMIT ${LIMIT}
-  `
+    SELECT /*${queryId}*/
+      * from func_identifier(in_identifier_value => $3,
+      in_identifier_type => $2,
+      in_kafka_topic => $1 ,
+      in_kafka_offset => $4,
+      in_kafka_partition => null)
+    `
   }
 
   const sqlKillQuery = queryId => {
     return `
-  WITH pids AS (
-    /*notthisone*/
-    SELECT pid
-    FROM   pg_stat_activity
-    WHERE  query LIKE '%/*${queryId}*/%'
-    AND    query NOT LIKE '%/*notthisone*/%'
-    AND    state='active'
-  )
-  SELECT pg_cancel_backend(pid) FROM pids;
-  `
+    WITH pids AS (
+      /*notthisone*/
+      SELECT pid
+      FROM   pg_stat_activity
+      WHERE  query LIKE '%/*${queryId}*/%'
+      AND    query NOT LIKE '%/*notthisone*/%'
+      AND    state='active'
+    )
+    SELECT pg_cancel_backend(pid) FROM pids;
+    `
   }
 
   app.use(cors())
   app.use(express.json())
 
-  try {
-    await client.connect()
-    await pidKiller.connect()
-  } catch(err) {
-    DEBUG && consoleLog(err.message)
-  }
+  const client = await clientPool.connect()
+  const pidKiller = await pidKillerPool.connect()
 
   const api = async (req, res) => {
+
     const queryId = req.body.queryId
-    DEBUG && consoleLog('queryId:', queryId)
+    DEBUG && console.log('queryId:', queryId)
+
     const query = {
       name: queryId,
       text: sqlSelectQuery(queryId),
       values: [
-        `%${req.body.search.queryKafkaTopic}%`,
-        `%${req.body.search.queryIdentifierType}%`,
-        `%${req.body.search.queryIdentifierValue}%`,
-        `%${req.body.search.queryKafkaOffset}%`
+        req.body.search.queryKafkaTopic,
+        req.body.search.queryIdentifierType,
+        req.body.search.queryIdentifierValue,
+        req.body.search.queryKafkaOffset ? parseInt(req.body.search.queryKafkaOffset) : null
       ]
     }
+   
     try {
-      await pidKiller.query(sqlKillQuery(queryId))
+      await client.query(sqlKillQuery(queryId))
     } catch (err) {
-      DEBUG && consoleLog(err.message)
+      DEBUG && console.log(err.message)
+    } finally {
+      // pidKiller.release()
     }
+
+    const data = await new Promise(async (resolve, reject) => {
+      let result
+      try {
+        result = await client.query(query)
+      } catch (err) {
+        reject( { rows: [] } )
+        console.log(err.message)
+      } finally {
+        resolve(result)
+        // client.release()
+      }    
+    })
+
     try {
-      const data = await client.query(query)
       res.setHeader('Content-Type', 'application/json')
       if (DEVDELAY > 0)
         setTimeout(_ => res.send(JSON.stringify(data.rows)), DEVDELAY)
       else
         res.send(JSON.stringify(data.rows))
-      DEBUG && consoleLog('rows:', data.rows.length)
+      DEBUG && console.log('rows:', data.rows.length)
     } catch (err) {
-      DEBUG && consoleLog(err.message)
+      DEBUG && console.log(err.message)
     }
+
   }
 
   app.post('/api/v1/search', api)
 
   app.listen(apiPort, _ => 
-    consoleLog('Seeker at port', apiPort)
-  ).on('error', err => consoleLog(err.message))
+    console.log('Seeker at port', apiPort)
+  ).on('error', err => console.log(err.message))
 
 })()
