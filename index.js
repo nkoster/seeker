@@ -51,13 +51,18 @@
     `
   }
 
+  const topicsQuery = {
+    name: 'GimmeTheTopix',
+    text: 'SELECT * FROM dist_kafka_topic'
+  }
+
   app.use(cors())
   app.use(express.json())
 
   const client = await clientPool.connect()
   const pidKiller = await pidKillerPool.connect()
 
-  const api = async (req, res) => {
+  const doSearchQuery = async (req, res) => {
 
     const queryId = req.body.queryId
     DEBUG && console.log('queryId:', queryId)
@@ -74,7 +79,7 @@
     }
    
     try {
-      await client.query(sqlKillQuery(queryId))
+      await pidKiller.query(sqlKillQuery(queryId))
     } catch (err) {
       DEBUG && console.log(err.message)
     } finally {
@@ -107,7 +112,30 @@
 
   }
 
-  app.post('/api/v1/search', api)
+  const doTopics = async (_, res) => {
+
+    res.setHeader('Content-Type', 'application/json')
+
+    let data
+
+    data = await new Promise(async (resolve, reject) => {
+      let result
+      try {
+        result = await client.query(topicsQuery)
+      } catch (err) {
+        reject( { rows: [] } )
+        console.log(err.message)
+      } finally {
+        resolve(result)
+      }    
+    })
+
+    res.send(JSON.stringify(data.rows))
+
+  }
+
+  app.post('/api/v1/search', doSearchQuery)
+  app.post('/api/v1/topics', doTopics)
 
   app.listen(apiPort, _ => 
     console.log('Seeker at port', apiPort)
