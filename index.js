@@ -1,9 +1,12 @@
 (async _ => {
 
+  require('dotenv').config()
+
   const DEBUG = true
   const DEVDELAY = 0
   const express = require('express')
   const app = express()
+  const jwt = require('jsonwebtoken')
   const cors = require('cors')
   const fs = require('fs')
 
@@ -58,6 +61,21 @@
 
   app.use(cors())
   app.use(express.json())
+
+  const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+    if (!token) {
+      return res.status(401).send()
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+      if (err) {
+        return res.status(403).send()
+      }
+      req.user = user
+      next()
+    })
+  }
 
   const client = await clientPool.connect()
   const pidKiller = await pidKillerPool.connect()
@@ -134,8 +152,8 @@
 
   }
 
-  app.post('/api/v1/search', doSearchQuery)
-  app.post('/api/v1/topics', doTopics)
+  app.post('/api/v1/search', authenticateToken, doSearchQuery)
+  app.post('/api/v1/topics', authenticateToken, doTopics)
 
   app.listen(apiPort, _ => 
     console.log('Seeker at port', apiPort)
